@@ -1,0 +1,63 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: 25rp18177-web-app
+    ports:
+      - "8082:80"
+    volumes:
+      - ./src:/var/www/html
+    environment:
+      - DB_HOST=db
+      - DB_USER=root
+      - DB_PASSWORD=password
+      - DB_NAME=25rp18177_shareride_db
+    depends_on:
+      - db
+    networks:
+      - auth-network
+    restart: always
+
+  db:
+    image: mysql:8.0
+    container_name: 25rp18177-mysql-db
+    environment:
+      - MYSQL_ROOT_PASSWORD=password
+      - MYSQL_DATABASE=25rp18177_shareride_db
+      - MYSQL_USER=app_user
+      - MYSQL_PASSWORD=app_password
+    ports:
+      - "3307:3306"
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - auth-db-volume:/var/lib/mysql
+    networks:
+      - auth-network
+    restart: always
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: 25rp18177-phpmyadmin
+    environment:
+      - PMA_HOST=db
+      - PMA_USER=root
+      - PMA_PASSWORD=password
+    ports:
+      - "8083:80"
+    depends_on:
+      - db
+    networks:
+      - auth-network
+    restart: always
+
+volumes:
+  auth-db-volume:
+
+networks:
+  auth-network:
+    driver: bridge
